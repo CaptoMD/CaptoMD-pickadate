@@ -72,14 +72,14 @@
           var rect = element[0].getBoundingClientRect();
           innerWidth = $window.innerWidth || $document.documentElement.clientWidth || $document.body.clientWidth;
 
-          scope.styles = { top: rect.bottom + 'px' };
+          scope.modalStyles = { top: rect.bottom + 'px' };
 
           if ((innerWidth - rect.left) >= MODAL_WIDTH) {
-            scope.styles.left = rect.left  + 'px';
+            scope.modalStyles.left = rect.left  + 'px';
           } else {
-            scope.styles.right = innerWidth - rect.right + 'px';
+            scope.modalStyles.right = innerWidth - rect.right + 'px';
           }
-          scope.styles.position = 'fixed';
+          scope.modalStyles.position = 'fixed';
         };
 
         var togglePicker = function(toggle) {
@@ -93,6 +93,16 @@
 
         element.on('focus', function() {
           scope.modalStyles = computeStyles(element[0]);
+          togglePicker(true);
+        });
+
+        element.on('keydown', function(e) {
+          if (indexOf.call([9, 13, 27], e.keyCode) >= 0) togglePicker(false);
+        });
+
+        element.on('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
           togglePicker(!scope.displayPicker);
         });
 
@@ -100,10 +110,6 @@
           if (scope.displayPicker) {
             scope.$apply(positionPicker);
           }
-        });
-
-        element.on('keydown', function(e) {
-          if (indexOf.call([9, 13, 27], e.keyCode) >= 0) togglePicker(false);
         });
 
         $document.on('click', function(e) {
@@ -242,8 +248,8 @@
     }])
 
     .directive('pickadate', ['$locale', '$sce', '$compile', '$document', '$window', '$timeout', 'pickadateDateHelper',
-      'pickadateI18n', 'pickadateModalBindings', 'filterFilter', 'dateFilter', function($locale, $sce, $compile, $document, $window, $timeout,
-                                                                          dateHelperFactory, i18n, modalBindings, filter, dateFilter) {
+      'pickadateI18n', 'pickadateModalBindings', 'filterFilter', 'dateFilter', function($locale, $sce, $compile,
+        $document, $window, $timeout, dateHelperFactory, i18n, modalBindings, filter, dateFilter) {
 
       var TEMPLATE =
         '<div class="pickadate" ng-show="displayPicker" ng-style="modalStyles">' +
@@ -293,8 +299,6 @@
               wantsModal              = element[0] instanceof HTMLInputElement || attrs.pickadate === 'modal',
               compiledHtml            = $compile(TEMPLATE)(scope),
               format                  = (attrs.format || 'yyyy-MM-dd').replace(/m/g, 'M'),
-              // supportPageOffset       = $window.pageXOffset !== undefined,
-              // isCSS1Compat            = (($document.compatMode || '') === 'CSS1Compat'),
               dateHelper              = dateHelperFactory(format, {
                 previousMonthSelectable: /^(previous|both)$/.test(attrs.selectOtherMonths),
                 nextMonthSelectable:     /^(next|both)$/.test(attrs.selectOtherMonths),
@@ -306,7 +310,7 @@
           scope.displayPicker = !wantsModal;
 
           scope.setDate = function(dateObj) {
-            if (!dateObj.enabled) return;
+            // if (!dateObj.enabled) return;
 
             selectedDates = toggleDate(dateObj, selectedDates);
 
