@@ -6,6 +6,7 @@
     }
     return -1;
   };
+  var MODAL_WIDTH = 500;
 
   function map(items, property) {
     var mappedArray = [];
@@ -65,14 +66,40 @@
       };
 
       return function(scope, element, rootNode) {
+        var innerWidth = $window.innerWidth || $document.documentElement.clientWidth || $document.body.clientWidth;
+
+        var positionPicker = function() {
+          var rect = element[0].getBoundingClientRect();
+          innerWidth = $window.innerWidth || $document.documentElement.clientWidth || $document.body.clientWidth;
+
+          scope.styles = { top: rect.bottom + 'px' };
+
+          if ((innerWidth - rect.left) >= MODAL_WIDTH) {
+            scope.styles.left = rect.left  + 'px';
+          } else {
+            scope.styles.right = innerWidth - rect.right + 'px';
+          }
+          scope.styles.position = 'fixed';
+        };
+
         var togglePicker = function(toggle) {
-          scope.displayPicker = toggle;
-          scope.$apply();
+          scope.$apply(function() {
+            if (toggle) {
+              positionPicker();
+            }
+            scope.displayPicker = toggle;
+          });
         };
 
         element.on('focus', function() {
           scope.modalStyles = computeStyles(element[0]);
-          togglePicker(true);
+          togglePicker(!scope.displayPicker);
+        });
+
+        angular.element($window).on('scroll', function() {
+          if (scope.displayPicker) {
+            scope.$apply(positionPicker);
+          }
         });
 
         element.on('keydown', function(e) {
@@ -191,11 +218,17 @@
           },
 
           buildDayNames: function() {
+            var j, L;
             var dayNames = $locale.DATETIME_FORMATS.SHORTDAY;
 
             if (weekStartsOn) {
               dayNames = dayNames.slice(0);
               for (var i = 0; i < weekStartsOn; i++) dayNames.push(dayNames.shift());
+            }
+            // Remove the "."
+            for (j = 0, L = dayNames.length; j < L; j++)
+            {
+              dayNames[j] = dayNames[j].replace('.','');
             }
             return dayNames;
           },
@@ -208,9 +241,9 @@
 
     }])
 
-    .directive('pickadate', ['$locale', '$sce', '$compile', '$document', '$window', 'pickadateDateHelper',
-      'pickadateI18n', 'pickadateModalBindings', 'filterFilter', function($locale, $sce, $compile, $document, $window,
-                                                                          dateHelperFactory, i18n, modalBindings, filter) {
+    .directive('pickadate', ['$locale', '$sce', '$compile', '$document', '$window', '$timeout', 'pickadateDateHelper',
+      'pickadateI18n', 'pickadateModalBindings', 'filterFilter', 'dateFilter', function($locale, $sce, $compile, $document, $window, $timeout,
+                                                                          dateHelperFactory, i18n, modalBindings, filter, dateFilter) {
 
       var TEMPLATE =
         '<div class="pickadate" ng-show="displayPicker" ng-style="modalStyles">' +
@@ -257,9 +290,11 @@
           var allowMultiple           = attrs.hasOwnProperty('multiple'),
               allowBlank              = attrs.hasOwnProperty('allowBlankDate'),
               selectedDates           = [],
-              wantsModal              = element[0] instanceof HTMLInputElement,
+              wantsModal              = element[0] instanceof HTMLInputElement || attrs.pickadate === 'modal',
               compiledHtml            = $compile(TEMPLATE)(scope),
               format                  = (attrs.format || 'yyyy-MM-dd').replace(/m/g, 'M'),
+              // supportPageOffset       = $window.pageXOffset !== undefined,
+              // isCSS1Compat            = (($document.compatMode || '') === 'CSS1Compat'),
               dateHelper              = dateHelperFactory(format, {
                 previousMonthSelectable: /^(previous|both)$/.test(attrs.selectOtherMonths),
                 nextMonthSelectable:     /^(next|both)$/.test(attrs.selectOtherMonths),
@@ -376,6 +411,13 @@
 
             if (!options.skipRenderInput) element.val(ngModel.$viewValue);
           }
+
+          ngModel.$formatters.unshift(function(date) {
+            $timeout(function() {
+              selectedDates = [dateFilter(date, format)];
+            });
+            return date;
+          });
 
           function toggleDate(dateObj, dateArray) {
             var index = indexOf.call(map(dateArray, 'formattedDate'), dateObj.formattedDate);
