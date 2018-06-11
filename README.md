@@ -1,4 +1,4 @@
-# angular-pickadate [![Build Status](https://travis-ci.org/restorando/angular-pickadate.svg?branch=master)](https://travis-ci.org/restorando/angular-pickadate)
+# angular-pickadate [![Known Vulnerabilities](https://snyk.io/test/github/CaptoMD/CaptoMD-pickadate/badge.svg?targetFile=package.json)](https://snyk.io/test/github/CaptoMD/CaptoMD-pickadate?targetFile=package.json)
 
 
 A simple and fluid inline datepicker for AngularJS with no extra dependencies.
